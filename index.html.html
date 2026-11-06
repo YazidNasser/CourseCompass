@@ -1,0 +1,1057 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>CourseCompass prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#F4F7F6; --surface:#FFFFFF; --sunk:#EAF0EE; --ink:#17222B; --muted:#56666F; --line:#D5DEDB;
+  --route:#0D6B69; --route-ink:#FFFFFF; --route-soft:#D9EEEC;
+  --cedar:#2D6A3C; --cedar-soft:#DFF0E3; --amber:#9A5800; --amber-soft:#FBEACF; --red:#A13A2A; --red-soft:#F8E1DC;
+  --focus:#1C5CCB; --shadow:0 1px 0 rgba(23,34,43,.06); --spot:rgba(13,107,105,.14);
+  color-scheme:light;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#0F161B; --surface:#162027; --sunk:#1C2830; --ink:#E6EEEC; --muted:#9BABB1; --line:#2A3943;
+    --route:#4DB2AC; --route-ink:#04201F; --route-soft:#15393A;
+    --cedar:#7CC58D; --cedar-soft:#163323; --amber:#E7A748; --amber-soft:#3A2911; --red:#F08B7A; --red-soft:#3B1D18;
+    --focus:#8AB4FF; --shadow:none; --spot:rgba(77,178,172,.22); color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0F161B; --surface:#162027; --sunk:#1C2830; --ink:#E6EEEC; --muted:#9BABB1; --line:#2A3943;
+  --route:#4DB2AC; --route-ink:#04201F; --route-soft:#15393A;
+  --cedar:#7CC58D; --cedar-soft:#163323; --amber:#E7A748; --amber-soft:#3A2911; --red:#F08B7A; --red-soft:#3B1D18;
+  --focus:#8AB4FF; --shadow:none; --spot:rgba(77,178,172,.22); color-scheme:dark;
+}
+html{height:100%; scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0; min-height:100%; background:var(--paper); color:var(--ink);
+  font-family:"Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; font-size:16px; line-height:1.5}
+button,select,input,textarea{font:inherit; color:inherit}
+:focus-visible{outline:3px solid var(--focus); outline-offset:2px; border-radius:6px}
+img{max-width:100%}
+h1,h2,h3{line-height:1.2; margin:0}
+p{margin:0}
+
+/* prototype strip */
+.proto{display:flex; flex-wrap:wrap; gap:10px 16px; align-items:center; justify-content:space-between;
+  padding:8px 20px; font-size:14px; color:var(--muted); border-bottom:1px solid var(--line); background:var(--sunk)}
+.proto label{display:flex; gap:8px; align-items:center}
+.proto select{padding:4px 8px; border:1px solid var(--line); border-radius:6px; background:var(--surface)}
+.proto .linkish{background:none; border:0; color:var(--route); text-decoration:underline; cursor:pointer; padding:2px}
+
+/* app frame */
+.app{max-width:1180px; margin:0 auto; padding:0 20px 48px}
+.topbar{display:flex; align-items:center; gap:16px; padding:16px 0; border-bottom:1px solid var(--line)}
+.brand{display:flex; align-items:center; gap:10px; font-weight:700; font-size:20px; letter-spacing:-.01em; background:none; border:0; padding:0; cursor:pointer}
+.needle{width:30px; height:30px; border-radius:50%; border:2px solid var(--route); position:relative; flex:none}
+.needle::before,.needle::after{content:""; position:absolute; left:50%; width:0; height:0; border-left:5px solid transparent; border-right:5px solid transparent; transform:translateX(-50%)}
+.needle::before{top:3px; border-bottom:11px solid var(--route)}
+.needle::after{bottom:3px; border-top:11px solid var(--line)}
+.context{color:var(--muted); font-size:14px}
+.spacer{flex:1}
+.seg{display:inline-flex; border:1px solid var(--line); border-radius:999px; padding:3px; background:var(--surface)}
+.seg button{border:0; background:none; padding:6px 14px; border-radius:999px; cursor:pointer; font-size:14px; color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--route); color:var(--route-ink); font-weight:700}
+.bell{position:relative; border:1px solid var(--line); background:var(--surface); border-radius:10px; width:40px; height:40px; cursor:pointer; display:grid; place-items:center}
+.bell svg{width:20px; height:20px}
+.badge{position:absolute; top:-6px; right:-6px; min-width:20px; height:20px; padding:0 6px; border-radius:999px; background:var(--amber); color:#fff; font-size:12px; font-weight:700; display:grid; place-items:center}
+
+.shell{display:grid; grid-template-columns:210px 1fr; gap:32px; padding-top:24px}
+.shell.bare{grid-template-columns:1fr}
+.side{display:flex; flex-direction:column; gap:4px}
+.side button{display:flex; justify-content:space-between; align-items:center; text-align:left; border:0; background:none; padding:10px 12px; border-radius:8px; cursor:pointer; color:var(--muted)}
+.side button:hover{background:var(--sunk); color:var(--ink)}
+.side button[aria-current="page"]{background:var(--route-soft); color:var(--ink); font-weight:700}
+.side .count{font-size:12px; background:var(--amber); color:#fff; border-radius:999px; padding:1px 8px}
+.side .note{margin-top:16px; padding:12px; font-size:13px; color:var(--muted); border-left:3px solid var(--route); background:var(--surface)}
+main{min-width:0}
+main:focus,[tabindex="-1"]:focus{outline:none}
+
+/* type */
+.page-head{display:flex; flex-wrap:wrap; gap:12px 20px; align-items:flex-end; justify-content:space-between; margin-bottom:20px}
+.page-head h1{font-size:30px; letter-spacing:-.015em}
+.sub{color:var(--muted); margin-top:6px; max-width:62ch}
+.h2{font-size:20px; margin-bottom:12px}
+.small{font-size:14px; color:var(--muted)}
+
+/* controls */
+.btn{display:inline-flex; align-items:center; justify-content:center; gap:8px; border-radius:8px; padding:10px 18px; border:1px solid var(--line); background:var(--surface); cursor:pointer; font-weight:700; text-decoration:none}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--route); border-color:var(--route); color:var(--route-ink)}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.ok{background:var(--cedar); border-color:var(--cedar); color:#fff}
+.btn.quiet{border-color:transparent; background:none; color:var(--route); padding-left:6px; padding-right:6px}
+.btn:disabled{opacity:.5; cursor:not-allowed}
+.actions{display:flex; flex-wrap:wrap; gap:10px; margin-top:24px}
+.back{margin-bottom:14px}
+
+.panel{background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:24px; box-shadow:var(--shadow)}
+.stack > * + *{margin-top:16px}
+.field{display:grid; gap:6px}
+.field > span{font-weight:700}
+.field select,.field textarea{padding:10px 12px; border:1px solid var(--line); border-radius:8px; background:var(--paper); width:100%}
+.field textarea{min-height:96px; resize:vertical}
+.choice{display:flex; gap:12px; align-items:flex-start; padding:14px; border:1px solid var(--line); border-radius:10px; cursor:pointer; background:var(--paper)}
+.choice:has(input:checked){border-color:var(--route); background:var(--route-soft)}
+.choice input{margin-top:4px; accent-color:var(--route); width:18px; height:18px}
+.choice b{display:block}
+.grid2{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px}
+
+.stepper{display:flex; gap:8px; margin-bottom:18px}
+.stepper span{height:6px; flex:1; border-radius:999px; background:var(--line)}
+.stepper span.on{background:var(--route)}
+.setup{max-width:680px}
+
+.chip{display:inline-flex; align-items:center; gap:6px; font-size:13px; padding:3px 10px; border-radius:999px; background:var(--sunk); color:var(--muted); white-space:nowrap}
+.chip.ok{background:var(--cedar-soft); color:var(--cedar)}
+.chip.warn{background:var(--amber-soft); color:var(--amber)}
+.chip.route{background:var(--route-soft); color:var(--route)}
+.chip.bad{background:var(--red-soft); color:var(--red)}
+
+.banner{display:flex; gap:12px; align-items:flex-start; padding:12px 14px; border-radius:10px; font-size:15px}
+.banner.warn{background:var(--amber-soft); color:var(--ink); border-left:4px solid var(--amber)}
+.banner.ok{background:var(--cedar-soft); border-left:4px solid var(--cedar)}
+.banner.info{background:var(--route-soft); border-left:4px solid var(--route)}
+.banner .btn{padding:6px 12px; font-size:14px}
+
+/* welcome */
+.hero{display:grid; grid-template-columns:1.25fr 1fr; gap:40px; align-items:center; padding:24px 0 32px}
+.hero h1{font-size:clamp(34px,5vw,54px); letter-spacing:-.025em; max-width:15ch}
+.hero .lede{font-size:18px; color:var(--muted); margin-top:16px; max-width:56ch}
+.audience{color:var(--route); font-weight:700; margin-bottom:12px}
+.mini{position:relative; padding:12px 0 12px 34px}
+.mini li{position:relative; list-style:none; padding:12px 0; font-weight:700}
+.mini li small{display:block; font-weight:400; color:var(--muted)}
+.mini li::before{content:""; position:absolute; left:-29px; top:13px; width:20px; height:20px; border-radius:50%; background:var(--surface); border:4px solid var(--route)}
+.mini li.co::before{border-style:dashed}
+.mini li.end::before{background:var(--route)}
+.mini ul{margin:0; padding:0}
+.facts{border-top:1px solid var(--line); padding-top:24px; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:24px}
+.facts p{font-size:17px; max-width:30ch}
+.facts b{color:var(--route)}
+
+/* roadmap route */
+.summary{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:22px}
+.route{position:relative}
+.stop{position:relative; padding:0 0 26px 46px}
+.stop::before{content:""; position:absolute; left:14px; top:30px; bottom:-4px; border-left:4px solid var(--route)}
+.stop:last-child::before{display:none}
+.stop.coop::before{border-left-style:dashed}
+.stop .dot{position:absolute; left:4px; top:6px; width:24px; height:24px; border-radius:50%; background:var(--surface); border:4px solid var(--route)}
+.stop.current .dot{background:var(--route)}
+.stop.warn .dot{border-color:var(--amber)}
+.stop.last .dot{background:var(--route); box-shadow:0 0 0 5px var(--route-soft)}
+.term-head{display:flex; flex-wrap:wrap; align-items:center; gap:8px 12px; margin-bottom:10px}
+.term-head h2{font-size:19px}
+.courses{display:grid; grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); gap:12px}
+.course{text-align:left; border:1px solid var(--line); border-radius:12px; padding:14px 16px; background:var(--surface); cursor:pointer; display:grid; gap:4px; align-content:start; box-shadow:var(--shadow)}
+.course:hover{border-color:var(--route)}
+.course .code{font-weight:700; color:var(--route)}
+.course .name{font-weight:700}
+.course .why{font-size:14px; color:var(--muted)}
+.course.coop-card{cursor:default; border-style:dashed; background:var(--sunk)}
+.course.add{border-style:dashed; color:var(--route); font-weight:700; place-items:center; min-height:96px; background:none}
+.stop .banner{margin-bottom:10px}
+.grad{font-weight:700}
+
+/* detail */
+.detail{display:grid; grid-template-columns:1.4fr 1fr; gap:20px}
+.offer{display:flex; flex-wrap:wrap; gap:8px}
+.checks{list-style:none; margin:0; padding:0; display:grid; gap:10px}
+.checks li{display:flex; gap:10px; align-items:flex-start}
+.mark{flex:none; width:22px; height:22px; border-radius:50%; display:grid; place-items:center; font-size:13px; font-weight:700; color:#fff; background:var(--cedar); margin-top:1px}
+.mark.warn{background:var(--amber)}
+.mark.lock{background:var(--muted)}
+.mark.todo{background:var(--line); color:var(--muted)}
+
+/* swap list */
+.options{display:grid; gap:10px}
+.opt{display:flex; gap:14px; align-items:flex-start; padding:14px 16px; border:1px solid var(--line); border-radius:12px; background:var(--surface); cursor:pointer}
+.opt:has(input:checked){border-color:var(--route); background:var(--route-soft)}
+.opt.off{cursor:not-allowed; background:var(--sunk); color:var(--muted)}
+.opt input{margin-top:5px; width:18px; height:18px; accent-color:var(--route)}
+.opt .top{display:flex; flex-wrap:wrap; gap:6px 10px; align-items:center}
+
+/* status timeline */
+.timeline{list-style:none; margin:0; padding:0}
+.timeline li{position:relative; padding:0 0 22px 36px}
+.timeline li::before{content:""; position:absolute; left:10px; top:24px; bottom:0; border-left:3px solid var(--line)}
+.timeline li:last-child::before{display:none}
+.timeline .mark{position:absolute; left:0; top:0}
+.timeline li.done::before{border-color:var(--cedar)}
+
+/* lists */
+.rows{display:grid; gap:10px}
+.row{display:flex; gap:14px; align-items:flex-start; justify-content:space-between; padding:14px 16px; border:1px solid var(--line); border-radius:12px; background:var(--surface)}
+.row.unread{border-left:4px solid var(--route)}
+.row.click{cursor:pointer; text-align:left; width:100%}
+.row.click:hover{border-color:var(--route)}
+.meter{height:10px; border-radius:999px; background:var(--sunk); overflow:hidden; display:flex}
+.meter i{display:block; height:100%}
+.meter .a{background:var(--cedar)} .meter .b{background:var(--route)} .meter .c{background:var(--route-soft)}
+.legend{display:flex; flex-wrap:wrap; gap:16px; font-size:14px; color:var(--muted); margin-top:8px}
+.legend span::before{content:""; display:inline-block; width:10px; height:10px; border-radius:3px; margin-right:6px; vertical-align:-1px; background:var(--k)}
+.empty{padding:40px 24px; text-align:center; border:1px dashed var(--line); border-radius:14px}
+.empty p{margin:8px auto 16px; max-width:44ch; color:var(--muted)}
+.comment{padding:12px 14px; border-radius:10px; background:var(--sunk); font-style:italic}
+
+/* generating */
+.gen{max-width:560px; margin:40px auto; text-align:center}
+.gen .ring{width:84px; height:84px; margin:0 auto 22px; border-radius:50%; border:6px solid var(--route-soft); border-top-color:var(--route); animation:spin 1s linear infinite}
+.gen .checks{text-align:left; max-width:360px; margin:22px auto 0}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes rise{from{opacity:0; transform:translateY(6px)}to{opacity:1; transform:none}}
+.route .stop{animation:rise .35s ease both}
+.route .stop:nth-child(2){animation-delay:.06s} .route .stop:nth-child(3){animation-delay:.12s} .route .stop:nth-child(4){animation-delay:.18s} .route .stop:nth-child(5){animation-delay:.24s}
+
+.toast{position:fixed; left:50%; bottom:calc(24px + env(safe-area-inset-bottom,0px)); transform:translateX(-50%) translateY(20px); background:var(--ink); color:var(--paper); padding:12px 18px; border-radius:10px; font-weight:700; opacity:0; pointer-events:none; transition:opacity .2s, transform .2s; max-width:calc(100% - 32px)}
+.toast.show{opacity:1; transform:translateX(-50%) translateY(0)}
+
+/* ---------- motion layer ---------- */
+/* Lenis recommended CSS (https://github.com/darkroomengineering/lenis) */
+html.lenis, html.lenis body{height:auto}
+.lenis.lenis-smooth{scroll-behavior:auto !important}
+.lenis.lenis-smooth [data-lenis-prevent]{overscroll-behavior:contain}
+.lenis.lenis-stopped{overflow:hidden}
+.lenis.lenis-smooth iframe{pointer-events:none}
+
+.proto .motion-toggle{display:flex; gap:8px; align-items:center; cursor:pointer}
+.proto .motion-toggle input{width:18px; height:18px; accent-color:var(--route)}
+
+.btn{transition:background-color .15s, border-color .15s, filter .15s}
+.btn:active:not(:disabled){transform:translateY(1px)}
+
+/* welcome: split-text headline and the route that draws itself */
+.mini-line{position:absolute; left:13px; top:26px; bottom:26px; width:4px; background:var(--route); border-radius:4px; transform-origin:top}
+.w{display:inline-block; overflow:hidden; vertical-align:top; padding-bottom:.14em; margin-bottom:-.14em}
+.w > span{display:inline-block}
+
+/* roadmap: the route fills in as you scroll (only while animations are on) */
+.stop::after{content:""; position:absolute; left:14px; top:30px; bottom:-4px; border-left:4px solid var(--route); transform:scaleY(0); transform-origin:top; transition:transform .5s cubic-bezier(.2,.7,.2,1); display:none; pointer-events:none}
+.stop.coop::after{border-left-style:dashed}
+.route.animated .stop::after{display:block}
+.stop:last-child::after{display:none !important}
+.route.animated .stop::before{border-left-color:var(--line)}
+.route.animated .stop.flow::after{transform:scaleY(1)}
+.route.animated .stop .dot{border-color:var(--line); transition:border-color .35s, background-color .35s}
+.route.animated .stop.passed .dot{border-color:var(--route)}
+.route.animated .stop.warn .dot{border-color:var(--amber)}
+.route.animated .stop.last:not(.passed) .dot{background:var(--surface); box-shadow:none}
+
+/* course cards: spotlight that follows the pointer (idea from React Bits SpotlightCard) */
+.course{position:relative; isolation:isolate; transition:border-color .2s, box-shadow .2s}
+.course:hover{box-shadow:0 8px 22px -14px var(--route)}
+.course::after{content:""; position:absolute; inset:0; border-radius:inherit; pointer-events:none; z-index:-1; opacity:0; transition:opacity .25s; background:radial-gradient(220px circle at var(--mx,50%) var(--my,50%), var(--spot), transparent 70%)}
+@media (hover:hover) and (pointer:fine){ html[data-motion="on"] .course:not(.coop-card):hover::after{opacity:1} }
+
+/* "what just changed" highlight */
+@keyframes flash-ring{0%{box-shadow:0 0 0 0 var(--route-soft); background:var(--route-soft)}40%{box-shadow:0 0 0 6px var(--route-soft)}100%{box-shadow:0 0 0 0 transparent; background:var(--surface)}}
+@keyframes banner-in{from{opacity:0; transform:translateY(-6px)}to{opacity:1; transform:none}}
+.stop.flash .course:not(.coop-card):not(.add){animation:flash-ring 1.3s ease-out}
+.stop.flash .banner{animation:banner-in .35s ease-out}
+
+/* plan builder: visible progress */
+.bar{height:8px; border-radius:999px; background:var(--sunk); overflow:hidden; max-width:360px; margin:20px auto 0}
+.bar i{display:block; height:100%; width:0; background:var(--route); border-radius:999px; transition:width .5s cubic-bezier(.2,.7,.2,1)}
+
+/* user control: one switch turns all motion off */
+html[data-motion="off"] *, html[data-motion="off"] *::before, html[data-motion="off"] *::after{animation:none !important; transition:none !important; scroll-behavior:auto !important}
+@media (prefers-reduced-motion: reduce){ *{animation:none !important; transition:none !important} }
+@media (max-width: 820px){
+  .shell{grid-template-columns:1fr; gap:16px}
+  .side{flex-direction:row; overflow-x:auto; gap:6px; padding-bottom:4px}
+  .side button{white-space:nowrap; gap:8px}
+  .side .note{display:none}
+  .hero,.detail,.grid2,.facts{grid-template-columns:1fr}
+  .context{display:none}
+}
+@media (max-width: 520px){
+  .app{padding:0 14px 40px}
+  .topbar{flex-wrap:wrap}
+  .page-head h1{font-size:25px}
+  .panel{padding:18px}
+}
+</style>
+</head>
+<body>
+<div class="proto" role="region" aria-label="Prototype controls">
+  <span>CourseCompass interactive prototype with sample data</span>
+  <span style="display:flex; gap:12px; align-items:center; flex-wrap:wrap">
+    <label>Jump to screen
+      <select id="jump"></select>
+    </label>
+    <label class="motion-toggle"><input type="checkbox" id="motionToggle" checked> Animations</label>
+    <button class="linkish" data-action="restart">Restart prototype</button>
+  </span>
+</div>
+
+<div class="app">
+  <header class="topbar">
+    <button class="brand" data-action="home" aria-label="CourseCompass home"><span class="needle" aria-hidden="true"></span>CourseCompass</button>
+    <span class="context">Canvas module for the Vancouver campus</span>
+    <span class="spacer"></span>
+    <div class="seg" role="group" aria-label="View as">
+      <button data-action="role" data-role="student" id="roleStudent">Student</button>
+      <button data-action="role" data-role="advisor" id="roleAdvisor">Advisor</button>
+    </div>
+    <button class="bell" data-action="go" data-view="notifications" aria-label="Notifications" id="bell">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 8 3 8H3s3-1 3-8"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>
+    </button>
+  </header>
+  <div class="shell" id="shell">
+    <nav class="side" id="side" aria-label="CourseCompass"></nav>
+    <main id="view" tabindex="-1"></main>
+  </div>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.3.4/dist/lenis.min.js"></script>
+<script>
+/* ---------- sample data ---------- */
+const TERMS = {F26:'Fall 2026', S27:'Spring 2027', U27:'Summer 2027', F27:'Fall 2027', S28:'Spring 2028'};
+const ORDER = ['F26','S27','U27','F27','S28'];
+const CREDITS = 4, FULL_TIME = 8, TOTAL = 32;
+const COURSES = {
+  'INFO 5100':{name:'Application Engineering and Development', type:'core', prereq:[], offered:['F26','S27','F27','S28']},
+  'INFO 6215':{name:'Business Analysis and Information Engineering', type:'elective', prereq:[], offered:['F26','S27','F27']},
+  'INFO 6205':{name:'Program Structure and Algorithms', type:'core', prereq:['INFO 5100'], offered:['S27','F27','S28']},
+  'INFO 6210':{name:'Data Management and Database Design', type:'core', prereq:[], offered:['S27','U27','F27']},
+  'INFO 6150':{name:'Web Design and User Experience Engineering', type:'core', prereq:[], offered:['U27','F27','S28']},
+  'INFO 6250':{name:'Web Development Tools and Methods', type:'elective', prereq:['INFO 5100'], offered:['U27','F27']},
+  'INFO 6105':{name:'Data Science Engineering Methods and Tools', type:'elective', prereq:['INFO 6205'], offered:['F27','S28']},
+  'INFO 7374':{name:'Special Topics: Product Management', type:'elective', prereq:[], offered:['F27','S28']},
+  'INFO 7245':{name:'Agile Software Development', type:'elective', prereq:['INFO 5100'], offered:['U27','S28']},
+  'INFO 6255':{name:'Software Quality Control and Management', type:'elective', prereq:[], offered:['U27','F27']},
+  'INFO 7390':{name:'Advances in Data Science and Architecture', type:'elective', prereq:['INFO 6105'], offered:['U27','S28']}
+};
+const ADVISOR = 'Priya Lin';
+const STUDENT = 'Raj Patel';
+
+const SCREENS = [
+  ['welcome','Welcome'], ['program','Setup 1: Program'], ['courses','Setup 2: Current courses'], ['coop','Setup 3: Co-op and load'],
+  ['generating','Building the plan'], ['roadmap','My roadmap'], ['course','Course details'], ['swap','Swap or add a course'],
+  ['review','Review and send to advisor'], ['status','Approval status'], ['progress','Degree progress'], ['notifications','Notifications'],
+  ['about','About CourseCompass'], ['advisor-inbox','Advisor: plans to review'], ['advisor-review','Advisor: review a plan']
+];
+
+/* ---------- state ---------- */
+let state;
+function freshState(){
+  return {
+    role:'student', view:'welcome',
+    setup:{program:'MS Information Systems', campus:'Vancouver', start:'Fall 2026', intl:'yes', transfer:'no', coop:'yes', coopTerm:'F27'},
+    plan:null, sel:null, swap:null, swapPick:null,
+    request:{status:'none', note:'', comment:'', sentAt:null},
+    notes:[
+      {id:1, text:'Registration for Spring 2027 opens on November 16. Your plan has 2 courses ready.', when:'Today', unread:true},
+      {id:2, text:'Welcome to CourseCompass. Build your plan in about 2 minutes.', when:'Yesterday', unread:false}
+    ],
+    timers:[]
+  };
+}
+state = freshState();
+
+/* ---------- plan logic ---------- */
+function generatePlan(s){
+  const plan = [{id:'F26', kind:'study', current:true, courses:['INFO 5100','INFO 6215']}];
+  const pairs = [['INFO 6205','INFO 6210'],['INFO 6150','INFO 6250'],['INFO 6105','INFO 7374']];
+  let p = 0;
+  for (const t of ['S27','U27','F27','S28']){
+    if (s.coop === 'yes' && s.coopTerm === t){ plan.push({id:t, kind:'coop', courses:[]}); continue; }
+    if (p < pairs.length){ plan.push({id:t, kind:'study', courses:pairs[p].slice()}); p++; }
+  }
+  return plan;
+}
+const idx = t => ORDER.indexOf(t);
+const termOf = code => state.plan.find(t => t.courses.includes(code));
+const inPlan = code => !!termOf(code);
+const hasCoop = () => state.plan.some(t => t.kind === 'coop');
+const studyTerms = () => state.plan.filter(t => t.kind === 'study');
+const lastTerm = () => state.plan[state.plan.length - 1];
+const credits = t => t.courses.length * CREDITS;
+const plannedCredits = () => state.plan.reduce((n,t) => n + credits(t), 0);
+function prereqMet(code, termId){
+  return COURSES[code].prereq.every(pr => { const t = termOf(pr); return t && idx(t.id) < idx(termId); });
+}
+function underLoad(){ return studyTerms().filter(t => credits(t) < FULL_TIME); }
+function missingCore(){ return Object.keys(COURSES).filter(c => COURSES[c].type === 'core' && !inPlan(c)); }
+function reason(code, termId){
+  const coop = hasCoop();
+  switch(code){
+    case 'INFO 5100': return 'Core course you are taking now. It unlocks INFO 6205 and INFO 6250.';
+    case 'INFO 6215': return 'Elective you are taking now.';
+    case 'INFO 6205': return 'Core. Needs INFO 5100, which you finish this fall.';
+    case 'INFO 6210': return 'Core. Offered in Vancouver next term.';
+    case 'INFO 6150': return coop ? 'Core. Good to finish before your co-op term.' : 'Core. Offered in Vancouver this term.';
+    case 'INFO 6250': return coop ? 'Elective. Builds web skills before your co-op.' : 'Elective. Needs INFO 5100, which you finish this fall.';
+    case 'INFO 6105': return 'Elective. Needs INFO 6205 and is not offered in Vancouver in Summer 2027.';
+    case 'INFO 7374': return 'Elective. Completes your 32 credits.';
+    default: return 'Elective you chose. Offered in Vancouver in ' + TERMS[termId] + '.';
+  }
+}
+function prereqText(code){
+  const pr = COURSES[code].prereq;
+  return pr.length ? pr.join(', ') : 'None';
+}
+
+/* ---------- helpers ---------- */
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function toast(msg){ const t = $('#toast'); t.textContent = typoStr(msg); t.classList.add('show'); clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('show'), 2600); }
+function clearTimers(){ state.timers.forEach(clearTimeout); state.timers = []; }
+function statusChip(){
+  const s = state.request.status;
+  if (s === 'pending') return '<span class="chip route">Waiting for advisor</span>';
+  if (s === 'approved') return '<span class="chip ok">Approved by advisor</span>';
+  if (s === 'changes') return '<span class="chip warn">Changes requested</span>';
+  return '<span class="chip">Draft</span>';
+}
+function unread(){ return state.notes.filter(n => n.unread).length; }
+
+/* ---------- motion layer: GSAP (animation) + Lenis (smooth scroll), always with plain fallbacks ---------- */
+function typoStr(s){ return String(s).replace(/(\w)'(\w)/g, '$1\u2019$2').replace(/"([^"\n]+)"/g, '\u201C$1\u201D'); }
+function typo(root){
+  const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, { acceptNode: n =>
+    (n.parentElement && n.parentElement.closest('script,style,textarea,[data-user]')) ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT });
+  const list = []; while (w.nextNode()) list.push(w.currentNode);
+  list.forEach(n => { const t = typoStr(n.nodeValue); if (t !== n.nodeValue) n.nodeValue = t; });
+}
+
+const Motion = (() => {
+  const root = document.documentElement;
+  const mq = matchMedia('(prefers-reduced-motion: reduce)');
+  const SEL = ':scope > .page-head, :scope > .back, :scope > .banner, :scope > .summary, :scope > .empty, :scope > .actions, .setup > .stepper, .setup > .page-head, .setup > .actions, .panel, .row, .opt, .stop';
+  let on = !mq.matches, lenis = null, raf = 0, lastBadge = 0, cleaners = [];
+  const G = () => window.gsap;
+  const live = () => on && !!G();
+
+  /* --- Lenis: smooth the wheel, never hijack it. Touch, keyboard and anchors stay native. --- */
+  function startLenis(){
+    if (lenis || !on || !window.Lenis) return;
+    try {
+      lenis = new window.Lenis({ lerp: 0.12, smoothWheel: true, wheelMultiplier: 1, syncTouch: false });
+      const loop = t => { if (!lenis) return; lenis.raf(t); raf = requestAnimationFrame(loop); };
+      raf = requestAnimationFrame(loop);
+    } catch (e) { lenis = null; }
+  }
+  function stopLenis(){
+    if (raf) cancelAnimationFrame(raf);
+    raf = 0;
+    if (lenis){ try { lenis.destroy(); } catch (e) {} lenis = null; }
+  }
+  function top(){
+    if (lenis){ try { lenis.scrollTo(0, { immediate: true, force: true }); return; } catch (e) {} }
+    window.scrollTo(0, 0);
+  }
+  function scrollToY(y){
+    y = Math.max(0, y);
+    if (lenis){ try { lenis.scrollTo(y, { duration: 0.9 }); return; } catch (e) {} }
+    window.scrollTo({ top: y, behavior: on ? 'smooth' : 'auto' });
+  }
+
+  /* --- master switch (user control and freedom) --- */
+  function set(v, announce){
+    on = !!v;
+    root.dataset.motion = on ? 'on' : 'off';
+    const cb = document.getElementById('motionToggle'); if (cb) cb.checked = on;
+    if (on) startLenis(); else { stopLenis(); cleanup(); }
+    if (announce) toast(on ? 'Animations on' : 'Animations off');
+  }
+  function cleanup(){
+    cleaners.forEach(f => { try { f(); } catch (e) {} });
+    cleaners = [];
+    document.querySelectorAll('.route.animated').forEach(r => r.classList.remove('animated'));
+  }
+  if (mq.addEventListener) mq.addEventListener('change', () => set(!mq.matches));
+
+  /* --- small building blocks --- */
+  function pop(els){
+    if (!live() || !els || els.length === 0) return;
+    G().fromTo(els, { scale: 0.4, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.45, ease: 'back.out(2.2)', stagger: 0.1, clearProps: 'transform,opacity' });
+  }
+  function splitWords(el){            /* idea from React Bits SplitText, written in plain JS */
+    if (!el || el.dataset.split) return [];
+    const words = el.textContent.split(' ');
+    el.dataset.split = '1';
+    el.textContent = '';
+    words.forEach((w, i) => {
+      const outer = document.createElement('span'); outer.className = 'w';
+      const inner = document.createElement('span'); inner.textContent = w;
+      outer.appendChild(inner); el.appendChild(outer);
+      if (i < words.length - 1) el.appendChild(document.createTextNode(' '));
+    });
+    return Array.from(el.querySelectorAll('.w > span'));
+  }
+  function countUps(v){                /* idea from React Bits CountUp */
+    v.querySelectorAll('[data-count]').forEach(el => {
+      const end = Number(el.dataset.count), o = { n: 0 };
+      el.textContent = '0';
+      G().to(o, { n: end, duration: 0.9, delay: 0.25, ease: 'power2.out',
+        onUpdate: () => { el.textContent = Math.round(o.n); },
+        onComplete: () => { el.textContent = end; } });
+    });
+  }
+  function placeFlash(v, id){          /* show the person what just changed */
+    const stop = v.querySelector('.stop[data-term="' + id + '"]'); if (!stop) return;
+    stop.classList.add('flash');
+    setTimeout(() => stop.classList.remove('flash'), 1500);
+    const y = stop.getBoundingClientRect().top + window.scrollY - Math.max(110, innerHeight * 0.22);
+    requestAnimationFrame(() => scrollToY(y));
+  }
+  function route(v){                   /* the route fills in as each term scrolls into view */
+    const ol = v.querySelector('ol.route'); if (!ol) return;
+    const stops = Array.from(ol.children).filter(c => c.classList.contains('stop'));
+    if (stops.length < 2) return;
+    ol.classList.add('animated');
+    let ticking = false, prev = -2;
+    const update = () => {
+      ticking = false;
+      const line = innerHeight * 0.8; let last = -1;
+      stops.forEach((s, i) => { if (s.getBoundingClientRect().top < line) last = i; });
+      if (last === prev) return;
+      prev = last;
+      stops.forEach((s, i) => { s.classList.toggle('passed', i <= last); s.classList.toggle('flow', i < last); });
+    };
+    const onScroll = () => { if (!ticking){ ticking = true; requestAnimationFrame(update); } };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll);
+    cleaners.push(() => { window.removeEventListener('scroll', onScroll); window.removeEventListener('resize', onScroll); });
+    setTimeout(update, 150);
+  }
+  function welcome(v, g){
+    const words = splitWords(v.querySelector('.hero h1'));
+    const tl = g.timeline({ defaults: { ease: 'power3.out' } });
+    tl.from(v.querySelector('.audience'), { opacity: 0, y: 8, duration: 0.25, clearProps: 'opacity,transform' })
+      .from(words, { yPercent: 110, opacity: 0, duration: 0.4, stagger: 0.03, clearProps: 'transform,opacity' }, '-=0.1')
+      .from(v.querySelectorAll('.hero .lede, .hero .actions'), { opacity: 0, y: 10, duration: 0.3, stagger: 0.06, clearProps: 'opacity,transform' }, '-=0.3')
+      .from(v.querySelector('.hero .panel'), { opacity: 0, x: 14, duration: 0.4, clearProps: 'opacity,transform' }, '-=0.5')
+      .from(v.querySelector('.mini-line'), { scaleY: 0, duration: 0.6, ease: 'power2.inOut', clearProps: 'transform' }, '-=0.2')
+      .from(v.querySelectorAll('.mini li'), { opacity: 0, x: -10, duration: 0.3, stagger: 0.1, clearProps: 'opacity,transform' }, '<')
+      .from(v.querySelectorAll('.facts p'), { opacity: 0, y: 10, duration: 0.3, stagger: 0.06, clearProps: 'opacity,transform' }, '-=0.4');
+  }
+  function badge(){
+    if (state.role !== 'student') return;
+    const n = unread(), el = document.querySelector('.badge');
+    if (n > lastBadge && el) pop(el);
+    lastBadge = n;
+  }
+  function bindSpot(){
+    if (!matchMedia('(hover:hover) and (pointer:fine)').matches) return;
+    document.addEventListener('pointermove', e => {
+      if (!on) return;
+      const c = e.target.closest && e.target.closest('.course:not(.coop-card)'); if (!c) return;
+      const r = c.getBoundingClientRect();
+      c.style.setProperty('--mx', (e.clientX - r.left) + 'px');
+      c.style.setProperty('--my', (e.clientY - r.top) + 'px');
+    }, { passive: true });
+  }
+
+  /* --- called after every render --- */
+  function enter(viewId){
+    cleanup();
+    const flash = state.flash, popIt = state.pop, celebrate = state.celebrate;
+    state.flash = null; state.pop = false; state.celebrate = false;
+    const v = document.getElementById('view');
+    if (flash) placeFlash(v, flash);
+    badge();
+    if (!on) return;
+    route(v);
+    const g = G(); if (!g) return;
+    if (viewId === 'progress' || celebrate) countUps(v);
+    if (viewId === 'welcome'){ welcome(v, g); return; }
+    if (viewId === 'generating'){ g.from(v.querySelector('.gen'), { opacity: 0, duration: 0.25, clearProps: 'opacity' }); return; }
+    const list = Array.from(v.querySelectorAll(SEL));
+    if (list.length) g.from(list, { opacity: 0, y: 10, duration: 0.3, ease: 'power2.out', stagger: Math.min(0.045, 0.35 / list.length), clearProps: 'opacity,transform' });
+    if (viewId === 'progress') g.from(v.querySelectorAll('.meter i'), { scaleX: 0, transformOrigin: '0% 50%', duration: 0.8, delay: 0.2, ease: 'power2.out', stagger: 0.12, clearProps: 'transform,transformOrigin' });
+    if (popIt) pop(v.querySelectorAll('.timeline .mark, .page-head .chip'));
+  }
+  function init(){ lastBadge = unread(); set(on); bindSpot(); }
+
+  return { get on(){ return on; }, init, enter, top, pop, set };
+})();
+
+/* ---------- navigation ---------- */
+function go(view, opts){
+  clearTimers();
+  Object.assign(state, opts || {});
+  state.view = view;
+  if (location.hash.slice(1) !== view) history.replaceState(null, '', '#' + view);
+  const keepPlace = !!state.flash;
+  render();
+  if (!keepPlace) Motion.top();
+  const h = $('#view h1'); if (h){ h.setAttribute('tabindex','-1'); h.focus({preventScroll:true}); }
+}
+function ensurePlan(){ if (!state.plan) state.plan = generatePlan(state.setup); }
+function ensureRequest(){
+  ensurePlan();
+  if (state.request.status === 'none'){ state.request = {status:'pending', note:'Does this plan work with a Fall 2027 co-op?', comment:'', sentAt:'Today'}; }
+}
+function jump(view){
+  if (!SCREENS.some(s => s[0] === view)) view = 'welcome';
+  const advisorView = view.startsWith('advisor');
+  if (['generating','roadmap','course','swap','review','status','progress'].includes(view)) ensurePlan();
+  if (view === 'course' || view === 'swap'){
+    const t = state.plan.find(t => t.kind === 'study' && !t.current && t.courses.includes('INFO 6250')) || state.plan.find(t => t.kind === 'study' && !t.current && t.courses.length);
+    state.sel = {term:t.id, code:t.courses[t.courses.length - 1]};
+    if (view === 'swap'){ state.swap = {mode:'swap', term:state.sel.term, code:state.sel.code}; state.swapPick = null; }
+  }
+  if (view === 'status' || advisorView) ensureRequest();
+  state.role = advisorView ? 'advisor' : (view === 'about' ? state.role : 'student');
+  go(view);
+}
+
+/* ---------- views ---------- */
+const V = {};
+
+V.welcome = () => `
+<section class="hero">
+  <div>
+    <p class="audience">For master's students at Northeastern's Vancouver campus</p>
+    <h1>Know what to take next term, and every term after.</h1>
+    <p class="lede">CourseCompass builds your term by term course plan right inside Canvas. It only suggests courses that run in Vancouver, fits in your co-op, keeps you full time, and gets your advisor's approval in one step.</p>
+    <div class="actions">
+      <button class="btn primary" data-action="go" data-view="program">Build my plan</button>
+      <button class="btn" data-action="go" data-view="about">How it works</button>
+    </div>
+  </div>
+  <div class="panel" aria-hidden="true">
+    <div class="mini"><span class="mini-line" aria-hidden="true"></span><ul>
+      <li>Fall 2026<small>INFO 5100, INFO 6215</small></li>
+      <li>Spring 2027<small>INFO 6205, INFO 6210</small></li>
+      <li class="co">Fall 2027<small>Co-op work term</small></li>
+      <li class="end">Spring 2028<small>Graduate with 32 credits</small></li>
+    </ul></div>
+  </div>
+</section>
+<section class="facts" aria-label="Why we built it">
+  <p>Only <b>2 of 9</b> Information Systems classmates I surveyed felt confident choosing their courses.</p>
+  <p><b>4 of 9</b> have needed a course that was not offered in Vancouver that term.</p>
+  <p><b>9 of 9</b> want an advisor to check an automated plan before they trust it.</p>
+</section>`;
+
+function stepper(n){ return `<div class="stepper" aria-label="Step ${n} of 3">${[1,2,3].map(i => `<span class="${i<=n?'on':''}"></span>`).join('')}</div>`; }
+function radio(name, value, cur, title, desc){
+  return `<label class="choice"><input type="radio" name="${name}" value="${value}" data-action="setup" ${cur===value?'checked':''}><span><b>${title}</b>${desc?`<span class="small">${desc}</span>`:''}</span></label>`;
+}
+
+V.program = () => { const s = state.setup; return `
+<div class="setup">
+  ${stepper(1)}
+  <div class="page-head"><div><h1>Your program</h1><p class="sub">We filled this in from Student Hub. Check that it is right.</p></div></div>
+  <div class="panel stack">
+    <div class="grid2">
+      <label class="field"><span>Program</span><select data-action="setup" name="program"><option ${s.program==='MS Information Systems'?'selected':''}>MS Information Systems</option><option ${s.program==='MS Computer Science'?'selected':''}>MS Computer Science</option><option ${s.program==='MS Data Analytics Engineering'?'selected':''}>MS Data Analytics Engineering</option></select></label>
+      <label class="field"><span>Campus</span><select data-action="setup" name="campus"><option selected>Vancouver</option></select></label>
+      <label class="field"><span>Start term</span><select data-action="setup" name="start"><option selected>Fall 2026</option></select></label>
+      <label class="field"><span>Credits to graduate</span><select disabled><option>32 credits</option></select></label>
+    </div>
+    <div class="field"><span>Are you an international student?</span>
+      <div class="grid2">${radio('intl','yes',s.intl,'Yes','We will check that every term keeps you full time.')}${radio('intl','no',s.intl,'No','We will skip the full-time check.')}</div>
+    </div>
+  </div>
+  <div class="actions"><button class="btn" data-action="go" data-view="welcome">Back</button><button class="btn primary" data-action="go" data-view="courses">Continue</button></div>
+</div>`; };
+
+V.courses = () => { const s = state.setup; return `
+<div class="setup">
+  ${stepper(2)}
+  <div class="page-head"><div><h1>Your courses so far</h1><p class="sub">These are the courses Student Hub shows for you this term.</p></div></div>
+  <div class="panel stack">
+    <ul class="checks">
+      <li><span class="mark">✓</span><span><b>INFO 5100</b> ${COURSES['INFO 5100'].name}<br><span class="small">Fall 2026, in progress</span></span></li>
+      <li><span class="mark">✓</span><span><b>INFO 6215</b> ${COURSES['INFO 6215'].name}<br><span class="small">Fall 2026, in progress</span></span></li>
+    </ul>
+    <div class="field"><span>Do you have transfer credits from another school?</span>
+      <div class="grid2">${radio('transfer','no',s.transfer,'No','')}${radio('transfer','yes',s.transfer,'Yes','Your advisor adds these when they review your plan.')}</div>
+    </div>
+  </div>
+  <div class="actions"><button class="btn" data-action="go" data-view="program">Back</button><button class="btn primary" data-action="go" data-view="coop">Continue</button></div>
+</div>`; };
+
+V.coop = () => { const s = state.setup; return `
+<div class="setup">
+  ${stepper(3)}
+  <div class="page-head"><div><h1>Co-op and course load</h1><p class="sub">Tell us if you plan to do a co-op so we can build your courses around it.</p></div></div>
+  <div class="panel stack">
+    <div class="field"><span>Do you plan to do a co-op?</span>
+      <div class="grid2">${radio('coop','yes',s.coop,'Yes, plan a co-op term','Courses shift around your work term.')}${radio('coop','no',s.coop,'No co-op','Finish your courses sooner.')}</div>
+    </div>
+    ${s.coop==='yes' ? `<label class="field"><span>Which term?</span><select data-action="setup" name="coopTerm"><option value="F27" ${s.coopTerm==='F27'?'selected':''}>Fall 2027 (recommended)</option><option value="U27" ${s.coopTerm==='U27'?'selected':''}>Summer 2027</option></select></label>` : ''}
+    <div class="banner info"><span>We plan 2 courses (8 credits) in each study term${s.intl==='yes' ? ', the full-time load international students need' : ''}.</span></div>
+  </div>
+  <div class="actions"><button class="btn" data-action="go" data-view="courses">Back</button><button class="btn primary" data-action="build">Build my plan</button></div>
+</div>`; };
+
+const GEN_STEPS = ['Reading your program requirements','Checking Vancouver course schedules','Fitting in your co-op term','Checking your full-time load each term'];
+V.generating = () => `
+<div class="gen">
+  <div class="ring" aria-hidden="true"></div>
+  <h1>Building your plan</h1>
+  <p class="sub" style="margin:8px auto 0">This takes a few seconds.</p>
+  <div class="bar" id="genProgress" role="progressbar" aria-label="Building your plan" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i id="genBar"></i></div>
+  <p class="small" id="genLabel" aria-live="polite" style="margin-top:8px">Starting</p>
+  <ul class="checks" id="genSteps">
+    ${GEN_STEPS.map((t,i) => `<li data-step="${i}"><span class="mark todo">${i+1}</span><span>${t}</span></li>`).join('')}
+  </ul>
+  <button class="btn quiet" data-action="skip-gen" style="margin-top:14px">Skip</button>
+</div>`;
+
+function termBlock(t, editable){
+  const name = TERMS[t.id];
+  const last = t === lastTerm();
+  if (t.kind === 'coop'){
+    return `<li class="stop coop" data-term="${t.id}"><span class="dot" aria-hidden="true"></span>
+      <div class="term-head"><h2>${name}</h2><span class="chip route">Co-op work term</span></div>
+      <div class="courses"><div class="course coop-card"><span class="name">Co-op work term</span><span class="why">No classes this term. Your courses are planned around it.</span></div></div></li>`;
+  }
+  const low = credits(t) < FULL_TIME;
+  const cls = ['stop', t.current?'current':'', low?'warn':'', last?'last':''].join(' ');
+  const chips = [
+    t.current ? '<span class="chip">In progress</span>' : '',
+    `<span class="chip ${low?'warn':'ok'}">${credits(t)} of ${FULL_TIME} credits</span>`,
+    low ? '' : '<span class="chip ok">Full time</span>',
+    last ? '<span class="chip route">Graduation term</span>' : ''
+  ].join('');
+  const cards = t.courses.map(c => editable ? `
+    <button class="course" data-action="open" data-code="${c}" data-term="${t.id}">
+      <span class="code">${c}</span><span class="name">${COURSES[c].name}</span>
+      <span class="why">${reason(c, t.id)}</span>
+    </button>` : `
+    <div class="course" style="cursor:default">
+      <span class="code">${c}</span><span class="name">${COURSES[c].name}</span>
+      <span class="why">${reason(c, t.id)}</span>
+    </div>`).join('');
+  const add = (editable && !t.current && t.courses.length < 2) ? `<button class="course add" data-action="add" data-term="${t.id}">Add a course</button>` : '';
+  const warn = low && state.setup.intl === 'yes' ? `<div class="banner warn"><span><b>Below full time.</b> This term has ${credits(t)} of ${FULL_TIME} credits. International students usually need full-time status every term to stay eligible for a work permit after graduation.</span></div>` : '';
+  return `<li class="${cls}" data-term="${t.id}"><span class="dot" aria-hidden="true"></span>
+    <div class="term-head"><h2>${name}</h2>${chips}</div>${warn}
+    <div class="courses">${cards}${add}</div></li>`;
+}
+
+V.roadmap = () => {
+  const lows = underLoad();
+  const r = state.request.status;
+  let banner = '';
+  if (r === 'approved') banner = `<div class="banner ok" style="margin-bottom:18px"><span><b>${ADVISOR} approved this plan.</b> You are ready to register for ${TERMS['S27']}.</span></div>`;
+  else if (r === 'pending') banner = `<div class="banner info" style="margin-bottom:18px"><span><b>Sent to ${ADVISOR}.</b> You can keep viewing your plan while you wait.</span><button class="btn" data-action="go" data-view="status">View status</button></div>`;
+  else if (r === 'changes') banner = `<div class="banner warn" style="margin-bottom:18px"><span><b>${ADVISOR} asked for changes:</b> “<span data-user>${esc(state.request.comment)}</span>”</span></div>`;
+  return `
+  <div class="page-head">
+    <div><h1>My roadmap</h1><p class="sub">Every course here runs in Vancouver in the term it is planned for. Select a course to see why it is there.</p></div>
+    <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap">${statusChip()}<button class="btn primary" data-action="go" data-view="review">${r==='approved'?'Send updated plan':'Send to advisor'}</button></div>
+  </div>
+  ${banner}
+  <div class="summary">
+    <span class="chip route">Graduate in ${TERMS[lastTerm().id]}</span>
+    <span class="chip ${plannedCredits()>=TOTAL?'ok':'warn'}"><span data-count="${plannedCredits()}">${plannedCredits()}</span> of ${TOTAL} credits planned</span>
+    <span class="chip">${hasCoop() ? 'Co-op in ' + TERMS[state.plan.find(t=>t.kind==='coop').id] : 'No co-op'}</span>
+    ${lows.length ? `<span class="chip warn">${lows.length} term below full time</span>` : '<span class="chip ok">Full time every term</span>'}
+  </div>
+  <ol class="route" style="list-style:none; margin:0; padding:0">${state.plan.map(t => termBlock(t, true)).join('')}</ol>`;
+};
+
+V.course = () => {
+  const {code, term} = state.sel; const c = COURSES[code]; const t = state.plan.find(x => x.id === term);
+  const editable = !t.current;
+  const offer = ORDER.map(id => `<span class="chip ${c.offered.includes(id)?'ok':''}">${c.offered.includes(id)?'✓':'✕'} ${TERMS[id]}</span>`).join('');
+  const pre = c.prereq.length ? c.prereq.map(p => { const pt = termOf(p); const ok = pt && idx(pt.id) < idx(term);
+      return `<li><span class="mark ${ok?'':'warn'}">${ok?'✓':'!'}</span><span><b>${p}</b> ${COURSES[p].name}<br><span class="small">${pt ? (pt.current ? 'In progress, ' : 'Planned for ') + TERMS[pt.id] : 'Not in your plan'}</span></span></li>`; }).join('')
+    : '<li><span class="mark">✓</span><span>No prerequisites</span></li>';
+  return `
+  <button class="btn quiet back" data-action="go" data-view="roadmap">Back to my roadmap</button>
+  <div class="page-head"><div><h1>${code}: ${c.name}</h1><p class="sub">${c.type === 'core' ? 'Core course' : 'Elective'}, ${CREDITS} credits, planned for ${TERMS[term]}${t.current ? ' (in progress)' : ''}.</p></div></div>
+  <div class="detail">
+    <div class="stack">
+      <div class="panel"><h2 class="h2">Why it is in your plan</h2><p>${reason(code, term)}</p></div>
+      <div class="panel"><h2 class="h2">Prerequisites</h2><ul class="checks">${pre}</ul></div>
+    </div>
+    <div class="stack">
+      <div class="panel"><h2 class="h2">When it runs in Vancouver</h2><div class="offer">${offer}</div></div>
+      <div class="panel"><h2 class="h2">Change this course</h2>
+        ${!editable ? '<p class="small">You are already taking this course, so it cannot be changed here.</p>'
+          : c.type === 'core' ? '<p class="small">Core courses are required. To move one to another term, ask your advisor when you send your plan.</p><div class="actions" style="margin-top:14px"><button class="btn" data-action="go" data-view="review">Send to advisor</button></div>'
+          : `<p class="small">Swap it for another elective that runs in ${TERMS[term]}, or remove it.</p>
+             <div class="actions" style="margin-top:14px"><button class="btn primary" data-action="swap">Swap course</button><button class="btn" data-action="remove">Remove from plan</button></div>`}
+      </div>
+    </div>
+  </div>`;
+};
+
+V.swap = () => {
+  const sw = state.swap; const term = sw.term; const t = state.plan.find(x => x.id === term);
+  const pool = Object.keys(COURSES).filter(c => COURSES[c].type === 'elective' && (!inPlan(c) || c === sw.code));
+  const items = pool.map(c => {
+    const offered = COURSES[c].offered.includes(term); const pre = prereqMet(c, term); const current = c === sw.code;
+    let note, ok = offered && pre && !current;
+    if (current) note = '<span class="chip route">In your plan now</span>';
+    else if (!offered) note = `<span class="chip bad">Not offered in Vancouver in ${TERMS[term]}</span>`;
+    else if (!pre){ const need = COURSES[c].prereq.find(p => { const pt = termOf(p); return !pt || idx(pt.id) >= idx(term); }); const pt = termOf(need);
+      note = `<span class="chip">🔒 Needs ${need}${pt ? ', planned for ' + TERMS[pt.id] : ''}</span>`; }
+    else note = `<span class="chip ok">Offered in Vancouver in ${TERMS[term]}</span>`;
+    return `<label class="opt ${ok?'':'off'}"><input type="radio" name="pick" value="${c}" data-action="pick" ${ok?'':'disabled'} ${state.swapPick===c?'checked':''}>
+      <span><span class="top"><b>${c}</b><span>${COURSES[c].name}</span></span><span style="display:flex; gap:6px; flex-wrap:wrap; margin-top:6px">${note}</span></span></label>`;
+  }).join('');
+  const title = sw.mode === 'swap' ? `Swap ${sw.code} in ${TERMS[term]}` : `Add a course to ${TERMS[term]}`;
+  return `
+  <button class="btn quiet back" data-action="go" data-view="${sw.mode==='swap'?'course':'roadmap'}">${sw.mode==='swap'?'Back to course details':'Back to my roadmap'}</button>
+  <div class="page-head"><div><h1>${title}</h1><p class="sub">Only electives that run in Vancouver in ${TERMS[term]}, and whose prerequisites you will have finished, can be picked.</p></div></div>
+  <div class="options" role="radiogroup" aria-label="Electives">${items}</div>
+  <div class="actions"><button class="btn primary" data-action="confirm-swap" ${state.swapPick?'':'disabled'}>${sw.mode==='swap'?'Swap in selected course':'Add selected course'}</button><button class="btn" data-action="go" data-view="roadmap">Cancel</button></div>`;
+};
+
+function checkItems(){
+  const lows = underLoad(); const core = missingCore();
+  return [
+    [core.length === 0, core.length ? `Missing core course: ${core.join(', ')}` : 'All core courses are included'],
+    [plannedCredits() >= TOTAL, `${plannedCredits()} of ${TOTAL} credits planned`],
+    [true, 'Every course runs in Vancouver in its planned term'],
+    [true, 'Prerequisites come before the courses that need them'],
+    [lows.length === 0, lows.length ? `${lows.map(t => TERMS[t.id]).join(', ')} is below full time` : 'Full time in every study term'],
+    [true, hasCoop() ? `Co-op work term in ${TERMS[state.plan.find(t=>t.kind==='coop').id]}` : 'No co-op term planned']
+  ];
+}
+V.review = () => {
+  const items = checkItems(); const issues = items.filter(i => !i[0]).length;
+  return `
+  <button class="btn quiet back" data-action="go" data-view="roadmap">Back to my roadmap</button>
+  <div class="page-head"><div><h1>Send your plan to your advisor</h1><p class="sub">${ADVISOR}, your graduate advisor, gets your plan in her Canvas inbox and can approve it or ask for changes.</p></div></div>
+  <div class="detail">
+    <div class="panel"><h2 class="h2">Plan check</h2>
+      <ul class="checks">${items.map(([ok,txt]) => `<li><span class="mark ${ok?'':'warn'}">${ok?'✓':'!'}</span><span>${esc(txt)}</span></li>`).join('')}</ul>
+      ${issues ? `<div class="banner warn" style="margin-top:16px"><span>Your advisor will see ${issues === 1 ? 'this warning' : 'these warnings'}. You can still send the plan, or go back and fix ${issues === 1 ? 'it' : 'them'}.</span></div>` : ''}
+    </div>
+    <div class="panel stack">
+      <label class="field"><span>Message for ${ADVISOR} (optional)</span><textarea data-lenis-prevent id="note" placeholder="For example: Does this plan work with my co-op?">${esc(state.request.note)}</textarea></label>
+      <p class="small">Graduation term: ${TERMS[lastTerm().id]}</p>
+      <div class="actions" style="margin-top:0"><button class="btn primary" data-action="send">Send to advisor</button></div>
+    </div>
+  </div>`;
+};
+
+V.status = () => {
+  const r = state.request;
+  if (r.status === 'none') return `<div class="empty"><h1>No plan sent yet</h1><p>Send your plan to ${ADVISOR} to get it approved before registration.</p><button class="btn primary" data-action="go" data-view="review">Send to advisor</button></div>`;
+  const done = r.status === 'approved' || r.status === 'changes';
+  return `
+  <button class="btn quiet back" data-action="go" data-view="roadmap">Back to my roadmap</button>
+  <div class="page-head"><div><h1>Approval status</h1><p class="sub">Your plan for graduating in ${TERMS[lastTerm().id]}.</p></div>${statusChip()}</div>
+  <div class="detail">
+    <div class="panel"><ul class="timeline">
+      <li class="done"><span class="mark">✓</span><b>Sent to ${ADVISOR}</b><br><span class="small">${r.sentAt}${r.note ? ` with your message: “<span data-user>${esc(r.note)}</span>”` : ''}</span></li>
+      <li class="${done?'done':''}"><span class="mark ${done?'':'todo'}">${done?'✓':'2'}</span><b>${done ? 'Reviewed' : 'In review'}</b><br><span class="small">${done ? 'Your advisor opened the plan from her Canvas inbox.' : 'Most plans are reviewed within 2 business days.'}</span></li>
+      <li class="${r.status==='approved'?'done':''}"><span class="mark ${r.status==='approved'?'':r.status==='changes'?'warn':'todo'}">${r.status==='approved'?'✓':r.status==='changes'?'!':'3'}</span><b>${r.status==='changes' ? 'Changes requested' : 'Approved and ready to register'}</b>
+        ${r.comment ? `<p class="comment" style="margin-top:8px">“<span data-user>${esc(r.comment)}</span>” ${ADVISOR}</p>` : ''}</li>
+    </ul></div>
+    <div class="panel stack">
+      ${r.status === 'pending' ? `<p>Want to see the other side? Switch to <b>Advisor</b> at the top of the page to review and approve this plan.</p><div class="actions" style="margin-top:0"><button class="btn primary" data-action="role" data-role="advisor">Switch to advisor view</button></div>`
+       : r.status === 'approved' ? `<p>Your plan is approved. Register for ${TERMS['S27']} when registration opens.</p><div class="actions" style="margin-top:0"><button class="btn ok" data-action="go" data-view="roadmap">View approved roadmap</button></div>`
+       : `<p>Update your plan, then send it again.</p><div class="actions" style="margin-top:0"><button class="btn primary" data-action="go" data-view="roadmap">Edit my roadmap</button></div>`}
+    </div>
+  </div>`;
+};
+
+V.progress = () => {
+  const done = state.plan.find(t => t.current).courses.length * CREDITS;
+  const planned = plannedCredits() - done;
+  const req = (type) => Object.keys(COURSES).filter(c => COURSES[c].type === type && (type === 'core' || inPlan(c)));
+  const line = c => { const t = termOf(c); return `<li><span class="mark ${t ? (t.current ? '' : 'todo') : 'warn'}">${t ? (t.current ? '…' : '✓') : '!'}</span><span><b>${c}</b> ${COURSES[c].name}<br><span class="small">${t ? (t.current ? 'In progress, ' : 'Planned for ') + TERMS[t.id] : 'Not in your plan yet'}</span></span></li>`; };
+  const electives = req('elective');
+  return `
+  <div class="page-head"><div><h1>Degree progress</h1><p class="sub">${state.setup.program}, ${TOTAL} credits. Your completed courses come from Student Hub.</p></div></div>
+  <div class="panel" style="margin-bottom:20px">
+    <div class="meter" role="img" aria-label="${done} credits in progress, ${planned} planned, out of ${TOTAL}">
+      <i class="b" style="width:${done/TOTAL*100}%"></i><i class="c" style="width:${planned/TOTAL*100}%"></i>
+    </div>
+    <div class="legend"><span style="--k:var(--route)"><span data-count="${done}">${done}</span> credits in progress</span><span style="--k:var(--route-soft)"><span data-count="${planned}">${planned}</span> credits planned</span><span><span data-count="${Math.max(0, TOTAL - done - planned)}">${Math.max(0, TOTAL - done - planned)}</span> credits left to plan</span></div>
+  </div>
+  <div class="grid2">
+    <div class="panel"><h2 class="h2">Core courses (4 required)</h2><ul class="checks">${req('core').map(line).join('')}</ul></div>
+    <div class="panel"><h2 class="h2">Electives (4 required, ${electives.length} planned)</h2><ul class="checks">${electives.map(line).join('')}</ul></div>
+  </div>`;
+};
+
+V.notifications = () => {
+  const list = state.notes.map(n => `<div class="row ${n.unread?'unread':''}"><span>${esc(n.text)}<br><span class="small">${n.when}</span></span>${n.unread?'<span class="chip route">New</span>':''}</div>`).join('');
+  return `
+  <div class="page-head"><div><h1>Notifications</h1><p class="sub">Updates about your plan, your advisor, and registration dates.</p></div>
+    <button class="btn" data-action="read-all" ${unread()?'':'disabled'}>Mark all as read</button></div>
+  <div class="rows">${list}</div>`;
+};
+
+V.about = () => `
+  <div class="page-head"><div><h1>About CourseCompass</h1><p class="sub">A planning module inside Canvas for master's students at Northeastern's Vancouver campus.</p></div></div>
+  <div class="grid2">
+    <div class="panel"><h2 class="h2">Who it is for</h2><p>First-term international master's students, like Raj, who want to graduate on time, fit in a co-op, and stay full time to remain eligible to work in Canada after graduation.</p></div>
+    <div class="panel"><h2 class="h2">The problem</h2><p>Course information is split between Student Hub, program websites, and advisors. None of it shows what runs in Vancouver each term, so students spend hours building a plan and still are not sure it is right.</p></div>
+    <div class="panel"><h2 class="h2">What it does</h2><ul class="checks">
+      <li><span class="mark">✓</span><span>Builds a term by term plan from your program requirements</span></li>
+      <li><span class="mark">✓</span><span>Only suggests courses offered in Vancouver that term</span></li>
+      <li><span class="mark">✓</span><span>Warns you if a term drops below full time</span></li>
+      <li><span class="mark">✓</span><span>Sends your plan to your advisor for one-step approval</span></li></ul></div>
+    <div class="panel"><h2 class="h2">About this prototype</h2><p>Course codes and names follow the MS Information Systems program, but schedules, requirements, and people are sample data for demonstration.</p></div>
+    <div class="panel"><h2 class="h2">How motion is used here</h2><ul class="checks">
+      <li><span class="mark">✓</span><span>Every animation is under half a second and never blocks a click</span></li>
+      <li><span class="mark">✓</span><span>The Animations switch at the top turns all motion off, and it starts off if your device asks for reduced motion</span></li>
+      <li><span class="mark">✓</span><span>Scrolling is smoothed, not hijacked. It still uses the browser’s own scroll, so the keyboard works as normal</span></li>
+      <li><span class="mark">✓</span><span>Motion explains change: the edited term lights up, the route fills as you scroll, and steps tick off while your plan builds</span></li>
+      <li><span class="mark">✓</span><span>Left out on purpose: buttons that move away from the pointer, cursor trails, and loops that never stop</span></li></ul></div>
+    <div class="panel"><h2 class="h2">Built with</h2><p>Animation by GSAP and smooth scrolling by Lenis. The split-text headline, counting numbers, and spotlight cards are inspired by React Bits and rewritten in plain JavaScript, since React Bits components are made for React.</p></div>
+  </div>`;
+
+V['advisor-inbox'] = () => {
+  const r = state.request;
+  const live = r.status !== 'none' ? `
+    <button class="row click" data-action="go" data-view="advisor-review">
+      <span><b>${STUDENT}</b>, MS Information Systems<br><span class="small">Sent ${r.sentAt}${underLoad().length ? ', 1 warning' : ''}</span></span>
+      ${r.status === 'pending' ? '<span class="chip route">Needs review</span>' : r.status === 'approved' ? '<span class="chip ok">Approved</span>' : '<span class="chip warn">Changes requested</span>'}
+    </button>` : '';
+  return `
+  <div class="page-head"><div><h1>Plans to review</h1><p class="sub">Plans students sent from CourseCompass. Each one has already been checked for Vancouver offerings and prerequisites.</p></div></div>
+  ${r.status === 'none' ? `<div class="empty"><h2 class="h2">No new plans to review</h2><p>When a student selects "Send to advisor," their plan shows up here.</p><button class="btn" data-action="role" data-role="student">Switch to student view</button></div>` : ''}
+  <div class="rows" style="margin-top:${r.status==='none'?'16px':'0'}">${live}
+    <div class="row"><span><b>Mei Chen</b>, MS Data Analytics Engineering<br><span class="small">Sent last week</span></span><span class="chip ok">Approved</span></div>
+    <div class="row"><span><b>Omar Haddad</b>, MS Information Systems<br><span class="small">Sent last week</span></span><span class="chip ok">Approved</span></div>
+  </div>`;
+};
+
+V['advisor-review'] = () => {
+  const r = state.request; const items = checkItems();
+  return `
+  <button class="btn quiet back" data-action="go" data-view="advisor-inbox">Back to plans to review</button>
+  <div class="page-head"><div><h1>${STUDENT}'s plan</h1><p class="sub">MS Information Systems, Vancouver campus, graduating in ${TERMS[lastTerm().id]}.</p></div>${statusChip()}</div>
+  ${r.note ? `<div class="banner info" style="margin-bottom:18px"><span><b>Message from ${STUDENT.split(' ')[0]}:</b> “<span data-user>${esc(r.note)}</span>”</span></div>` : ''}
+  <div class="detail">
+    <ol class="route" style="list-style:none; margin:0; padding:0">${state.plan.map(t => termBlock(t, false)).join('')}</ol>
+    <div class="stack">
+      <div class="panel"><h2 class="h2">Automatic checks</h2><ul class="checks">${items.map(([ok,txt]) => `<li><span class="mark ${ok?'':'warn'}">${ok?'✓':'!'}</span><span>${esc(txt)}</span></li>`).join('')}</ul></div>
+      <div class="panel stack">
+        <label class="field"><span>Comment for ${STUDENT.split(' ')[0]}</span><textarea data-lenis-prevent id="advComment" placeholder="For example: Looks good. Register for Spring 2027 on November 16.">${esc(r.comment)}</textarea></label>
+        <div class="actions" style="margin-top:0">
+          <button class="btn ok" data-action="approve" ${r.status==='pending'?'':'disabled'}>Approve plan</button>
+          <button class="btn" data-action="changes" ${r.status==='pending'?'':'disabled'}>Request changes</button>
+        </div>
+        ${r.status !== 'pending' ? `<p class="small">You already ${r.status==='approved'?'approved this plan':'asked for changes'}. <button class="btn quiet" data-action="role" data-role="student">See it as the student</button></p>` : ''}
+      </div>
+    </div>
+  </div>`;
+};
+
+/* ---------- chrome ---------- */
+function renderChrome(){
+  const setupViews = ['welcome','program','courses','coop','generating'];
+  const bare = state.role === 'student' && setupViews.includes(state.view);
+  $('#shell').classList.toggle('bare', bare);
+  $('#roleStudent').setAttribute('aria-pressed', state.role === 'student');
+  $('#roleAdvisor').setAttribute('aria-pressed', state.role === 'advisor');
+  const n = unread();
+  $('#bell').style.display = state.role === 'student' ? '' : 'none';
+  $('#bell').innerHTML = $('#bell').innerHTML.replace(/<span class="badge">.*?<\/span>/, '') + (n ? `<span class="badge">${n}</span>` : '');
+  $('#bell').setAttribute('aria-label', n ? `Notifications, ${n} new` : 'Notifications');
+  const items = state.role === 'student'
+    ? [['roadmap','My roadmap'],['progress','Degree progress'],['notifications','Notifications', n],['about','About CourseCompass']]
+    : [['advisor-inbox','Plans to review', state.request.status === 'pending' ? 1 : 0],['about','About CourseCompass']];
+  const cur = state.view === 'course' || state.view === 'swap' || state.view === 'review' || state.view === 'status' ? 'roadmap' : state.view === 'advisor-review' ? 'advisor-inbox' : state.view;
+  $('#side').innerHTML = bare ? '' : items.map(([v,l,c]) => `<button data-action="nav" data-view="${v}" ${cur===v?'aria-current="page"':''}><span>${l}</span>${c?`<span class="count">${c}</span>`:''}</button>`).join('')
+    + (state.role === 'advisor' ? `<p class="note">Advisors review plans right from their Canvas inbox. No separate dashboard needed yet.</p>` : '');
+  $('#jump').innerHTML = SCREENS.map(([v,l]) => `<option value="${v}" ${v===state.view?'selected':''}>${SCREENS.findIndex(s=>s[0]===v)+1}. ${l}</option>`).join('');
+}
+function render(opts){
+  renderChrome();
+  $('#view').innerHTML = V[state.view]();
+  typo($('#view'));
+  if (!(opts && opts.quiet)) Motion.enter(state.view);
+  if (state.view === 'generating') runGenerating();
+}
+function runGenerating(){
+  const step = Motion.on ? 550 : 250;
+  const bar = $('#genBar'), pb = $('#genProgress'), lab = $('#genLabel');
+  if (bar) bar.style.width = '8%';
+  [0,1,2,3].forEach(i => state.timers.push(setTimeout(() => {
+    const m = document.querySelector(`#genSteps li[data-step="${i}"] .mark`);
+    if (m){ m.className = 'mark'; m.textContent = '✓'; Motion.pop(m); }
+    const pct = (i + 1) * 25;
+    if (bar) bar.style.width = pct + '%';
+    if (pb) pb.setAttribute('aria-valuenow', pct);
+    if (lab) lab.textContent = `Step ${i + 1} of 4: ${GEN_STEPS[i]}`;
+  }, step * (i + 1))));
+  state.timers.push(setTimeout(() => { go('roadmap', {celebrate:true}); toast('Your plan is ready'); }, step * 5));
+}
+
+/* ---------- actions ---------- */
+document.addEventListener('click', e => {
+  const el = e.target.closest('[data-action]'); if (!el || el.tagName === 'INPUT' || el.tagName === 'SELECT') return;
+  const a = el.dataset.action;
+  if (a === 'go' || a === 'nav'){
+    const v = el.dataset.view;
+    if (['roadmap','progress','review','status'].includes(v) && !state.plan){ go('program'); toast('Build your plan first'); return; }
+    if (v === 'notifications') state.role = 'student';
+    go(v); return;
+  }
+  if (a === 'home'){ go(state.role === 'advisor' ? 'advisor-inbox' : (state.plan ? 'roadmap' : 'welcome')); return; }
+  if (a === 'restart'){ clearTimers(); state = freshState(); go('welcome'); toast('Prototype restarted'); return; }
+  if (a === 'role'){
+    state.role = el.dataset.role;
+    if (state.role === 'advisor'){ ensurePlan(); go('advisor-inbox'); }
+    else go(state.plan ? (state.request.status === 'none' ? 'roadmap' : 'status') : 'welcome');
+    return;
+  }
+  if (a === 'build'){ state.plan = generatePlan(state.setup); state.request = {status:'none', note:'', comment:'', sentAt:null}; go('generating'); return; }
+  if (a === 'skip-gen'){ go('roadmap', {celebrate:true}); toast('Your plan is ready'); return; }
+  if (a === 'open'){ state.sel = {code:el.dataset.code, term:el.dataset.term}; go('course'); return; }
+  if (a === 'swap'){ state.swap = {mode:'swap', term:state.sel.term, code:state.sel.code}; state.swapPick = null; go('swap'); return; }
+  if (a === 'add'){ state.swap = {mode:'add', term:el.dataset.term, code:null}; state.swapPick = null; go('swap'); return; }
+  if (a === 'remove'){
+    const {code, term} = state.sel; const t = state.plan.find(x => x.id === term);
+    t.courses = t.courses.filter(c => c !== code);
+    go('roadmap', {flash: term}); toast(`${code} removed from ${TERMS[term]}`); return;
+  }
+  if (a === 'confirm-swap'){
+    const sw = state.swap; const t = state.plan.find(x => x.id === sw.term); const pick = state.swapPick; if (!pick) return;
+    if (sw.mode === 'swap') t.courses = t.courses.map(c => c === sw.code ? pick : c); else t.courses.push(pick);
+    go('roadmap', {flash: sw.term}); toast(sw.mode === 'swap' ? `Swapped in ${pick} for ${TERMS[sw.term]}` : `${pick} added to ${TERMS[sw.term]}`); return;
+  }
+  if (a === 'send'){
+    state.request = {status:'pending', note:($('#note')||{}).value || '', comment:'', sentAt:'Today'};
+    go('status', {pop:true}); toast(`Sent to ${ADVISOR}`); return;
+  }
+  if (a === 'approve' || a === 'changes'){
+    const c = ($('#advComment')||{}).value || '';
+    if (a === 'changes' && !c.trim()){ toast('Add a comment so the student knows what to change'); $('#advComment').focus(); return; }
+    state.request.status = a === 'approve' ? 'approved' : 'changes';
+    state.request.comment = c.trim() || (a === 'approve' ? 'Looks good. Register when registration opens.' : '');
+    state.notes.unshift({id:Date.now(), text: a === 'approve' ? `${ADVISOR} approved your plan.` : `${ADVISOR} asked for changes to your plan.`, when:'Just now', unread:true});
+    go('advisor-review', {pop:true}); toast(a === 'approve' ? 'Plan approved' : 'Changes requested'); return;
+  }
+  if (a === 'read-all'){ state.notes.forEach(n => n.unread = false); go('notifications'); toast('All notifications marked as read'); return; }
+});
+document.addEventListener('change', e => {
+  const el = e.target;
+  if (el.id === 'motionToggle'){ Motion.set(el.checked, true); if (state.view !== 'generating') render(); return; }
+  if (el.dataset.action === 'setup'){ state.setup[el.name] = el.value; if (el.name === 'coop') render({quiet:true}); return; }
+  if (el.dataset.action === 'pick'){ state.swapPick = el.value; const b = document.querySelector('[data-action="confirm-swap"]'); if (b) b.disabled = false; }
+});
+document.addEventListener('input', e => {
+  if (e.target.id === 'note') state.request.note = e.target.value;
+  if (e.target.id === 'advComment') state.request.comment = e.target.value;
+});
+$('#jump').addEventListener('change', e => jump(e.target.value));
+window.addEventListener('hashchange', () => { const h = location.hash.slice(1); if (h && h !== state.view) jump(h); });
+
+/* ---------- start ---------- */
+Motion.init();
+(function start(){
+  const h = location.hash.slice(1);
+  if (h && SCREENS.some(s => s[0] === h) && h !== 'welcome') jump(h); else go('welcome');
+})();
+</script>
+</body>
+</html>
